@@ -23,7 +23,7 @@ jobs:
         run: docker build -t container-security-demo:${{ github.sha }} .
 
       - name: Scan image and generate SARIF report
-        uses: aquasecurity/trivy-action@0.33.0
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: container-security-demo:${{ github.sha }}
           format: sarif
@@ -39,7 +39,7 @@ jobs:
           sarif_file: trivy-results.sarif
 
       - name: Security Gate
-        uses: aquasecurity/trivy-action@0.33.0
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: container-security-demo:${{ github.sha }}
           format: table
