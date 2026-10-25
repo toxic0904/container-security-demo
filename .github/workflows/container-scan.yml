@@ -22,27 +22,34 @@ jobs:
       - name: Build Docker image
         run: docker build -t container-security-demo:${{ github.sha }} .
 
+      - name: Install Trivy manually
+        run: |
+          wget -q https://github.com/aquasecurity/trivy/releases/download/v0.65.0/trivy_0.65.0_Linux-64bit.tar.gz -O trivy.tar.gz
+          tar -xzf trivy.tar.gz
+          sudo install trivy /usr/local/bin/trivy
+          trivy --version
+
       - name: Scan image and generate SARIF report
-        uses: aquasecurity/trivy-action@v0.33.1
-        with:
-          image-ref: container-security-demo:${{ github.sha }}
-          format: sarif
-          output: trivy-results.sarif
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: '0'
+        run: |
+          trivy image \
+            --format sarif \
+            --output trivy-results.sarif \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 0 \
+            container-security-demo:${{ github.sha }}
 
       - name: Upload scan results to GitHub
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        if: ${{ always() && hashFiles('trivy-results.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
 
       - name: Security Gate
-        uses: aquasecurity/trivy-action@v0.33.1
-        with:
-          image-ref: container-security-demo:${{ github.sha }}
-          format: table
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: '1'
+        run: |
+          trivy image \
+            --format table \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            container-security-demo:${{ github.sha }}
